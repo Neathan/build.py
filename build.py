@@ -261,4 +261,4 @@ if(args.run):
 # TODO
 # 1: Should not be able to use -r when building a library
 # 2: There might be problems with Path not automaticly resolving the absolute path
-# 3: Force update after the settings file has been changed
+# 3: Force an update after the settings file has been changed
