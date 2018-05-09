@@ -23,9 +23,9 @@ from subprocess import call
 parser = argparse.ArgumentParser()
 
 # Add arguments
-parser.add_argument("-c", "--clean", help="treat all files as changed.", action="store_true")
-parser.add_argument("-v", "--verbose", help="enter verbose mode.", action="store_true")
-parser.add_argument("-r", "--run", help="run the program after compilation.", action="store_true")
+parser.add_argument("-c", "--clean", help="treat all files as changed", action="store_true")
+parser.add_argument("-v", "--verbose", help="enter verbose mode", action="store_true")
+parser.add_argument("-r", "--run", help="run the program after compilation", action="store_true")
 
 
 # Parse the arguments
