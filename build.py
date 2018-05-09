@@ -60,7 +60,8 @@ if(args.clean or not haveFilesFile):
 		print("No files file found forcing full update")
 
 	# Remove all objects files
-	shutil.rmtree(Path(settings["ObjectLocation"]));
+	if(Path(settings["ObjectLocation"]).exists()):
+		shutil.rmtree(Path(settings["ObjectLocation"]))
 
 	data["files"] = {}
 	for extension in settings["FileSuffixes"]:
