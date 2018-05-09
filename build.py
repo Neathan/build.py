@@ -26,7 +26,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--clean", help="treat all files as changed", action="store_true")
 parser.add_argument("-v", "--verbose", help="enter verbose mode", action="store_true")
 parser.add_argument("-r", "--run", help="run the program after compilation", action="store_true")
-
+parser.add_argument("-gc", "--gclean", help="treat all files as changed for this project and all its dependencies", action="store_true")
+parser.add_argument("-gv", "--gverbose", help="enter global verbose mode", action="store_true")
 
 # Parse the arguments
 args = parser.parse_args()
@@ -38,6 +39,12 @@ data = {}
 commands = []
 filesChanged = False
 
+# Set local arguments to reflect the global arguments
+if(args.gverbose == True):
+	args.verbose = True
+if(args.gclean == True):
+	args.clean = True
+
 # Load settings
 if(Path("settings.json").exists()):
 	with open("settings.json", encoding="utf-8") as settingsfile:
@@ -45,6 +52,25 @@ if(Path("settings.json").exists()):
 else:
 	print("No settings file found!")
 	exit(2)
+
+def getDependencyArgsAsString(args):
+	strArg = ""
+	if(args.gclean):
+		strArg += "-gc "
+	if(args.gverbose):
+		strArg += "-gv "
+	return strArg
+
+# Run dependencies
+if(args.verbose and len(settings["Dependencies"]) > 0):
+	print("Building dependencies")
+for dep in settings["Dependencies"]:
+	path = str(Path(dep))
+	if(args.verbose):
+		print("Starting: " + path + os.sep + "build.py")
+	call("python build.py " + getDependencyArgsAsString(args), cwd=path)
+	if(args.verbose):
+		print("Dependency completed")
 
 # Returns all sources files by filter
 def getAllFilePaths(filter):
@@ -55,7 +81,23 @@ def getAllFilePaths(filter):
 
 # If the hashlibrary should be fully updated
 haveFilesFile = Path("files.json").exists()
-if(args.clean or not haveFilesFile):
+settingsFileUpdated = False
+if(haveFilesFile):
+	with open("files.json", encoding="utf-8") as file:
+		data = json.load(file)
+		files = data["files"]
+	with open("settings.json", "rb") as file:
+				buf = file.read()
+				hasher = hashlib.md5()
+				hasher.update(buf)
+				settingsHash = hasher.hexdigest()
+	if(data["settings"] != settingsHash):
+		settingsFileUpdated = True
+		data["settings"] = settingsHash
+		if(args.verbose):
+			print("Settings file changed forcing an update")
+
+if(args.clean or not haveFilesFile or settingsFileUpdated):
 	if(not haveFilesFile and args.verbose):
 		print("No files file found forcing full update")
 
@@ -63,7 +105,15 @@ if(args.clean or not haveFilesFile):
 	if(Path(settings["ObjectLocation"]).exists()):
 		shutil.rmtree(Path(settings["ObjectLocation"]))
 
+	data = {}
 	data["files"] = {}
+	with open("settings.json", "rb") as file:
+				buf = file.read()
+				hasher = hashlib.md5()
+				hasher.update(buf)
+				settingsHash = hasher.hexdigest()
+	data["settings"] = settingsHash
+
 	for extension in settings["FileSuffixes"]:
 		pathlist = getAllFilePaths("**/*" + extension)
 		for path in pathlist:
@@ -78,10 +128,6 @@ if(args.clean or not haveFilesFile):
 
 # If we should not fully update the hashlibrary
 else:
-	with open("files.json", encoding="utf-8") as file:
-		data = json.load(file)
-		files = data["files"]
-	
 	# Get what files has been updated and if any new files has been added
 	for extension in settings["FileSuffixes"]:
 		pathlist = getAllFilePaths("**/*" + extension)
@@ -146,7 +192,7 @@ def generateLinkCommand():
 	return command
 
 def generateLibraryLinkCommand():
-	command = "ar -r "
+	command = "llvm-ar rcs "
 	# Set output file
 	command += settings["OutputFile"] + settings["LibrarySuffix"] + " "
 	# Get all object files paths
@@ -229,7 +275,8 @@ if(filesChanged == True):
 		linkCommand = generateLibraryLinkCommand()
 		if(args.verbose):
 			print(linkCommand)
-		os.system(linkCommand)
+		call(linkCommand)
+
 		# Check if folder exists
 		if(Path(settings["LibraryHeaderOutput"]).exists()):
 			shutil.rmtree(Path(settings["LibraryHeaderOutput"]))
@@ -245,20 +292,19 @@ if(filesChanged == True):
 		linkCommand = generateLinkCommand()
 		if(args.verbose):
 			print(linkCommand)
-		os.system(linkCommand)
+		call(linkCommand)
 else:
 	if(args.verbose):
 		print("No files changed")
 
 # Run program
-if(args.run):
+if(args.verbose and args.run and settings["IsLibrary"] == True):
+	print("Ignoring --run argument because libraries can't be executed")
+if(args.run and settings["IsLibrary"] != True):
 	if(args.verbose):
 		print("Running program")
-	os.system("." + os.sep + settings["OutputFile"] + settings["ExecutableSuffix"])
-
-
+	call("." + os.sep + settings["OutputFile"] + settings["ExecutableSuffix"])
 
 # TODO
-# 1: Should not be able to use -r when building a library
-# 2: There might be problems with Path not automaticly resolving the absolute path
-# 3: Force an update after the settings file has been changed
+# 1: There might be problems with Path not automaticly resolving the absolute path
+# 2: Force an update after the settings file has been changed

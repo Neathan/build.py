@@ -37,5 +37,7 @@
 		"-lXinerama",
 		"-lXcursor",
 		"-pthread"
+	],
+	"Dependencies": [
 	]
 }
