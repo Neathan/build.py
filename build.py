@@ -68,7 +68,8 @@ for dep in settings["Dependencies"]:
 	path = str(Path(dep))
 	if(args.verbose):
 		print("Starting: " + path + os.sep + "build.py")
-	call("python build.py " + getDependencyArgsAsString(args), cwd=path)
+	#call("python build.py " + getDependencyArgsAsString(args), cwd=path)
+	os.system("cd " + path + "; python build.py " + getDependencyArgsAsString(args))
 	if(args.verbose):
 		print("Dependency completed")
 
@@ -192,7 +193,7 @@ def generateLinkCommand():
 	return command
 
 def generateLibraryLinkCommand():
-	command = "llvm-ar rcs "
+	command = settings["LibraryLinker"] + " rcs "
 	# Set output file
 	command += settings["OutputFile"] + settings["LibrarySuffix"] + " "
 	# Get all object files paths
@@ -275,7 +276,7 @@ if(filesChanged == True):
 		linkCommand = generateLibraryLinkCommand()
 		if(args.verbose):
 			print(linkCommand)
-		call(linkCommand)
+		os.system(linkCommand)
 
 		# Check if folder exists
 		if(Path(settings["LibraryHeaderOutput"]).exists()):
@@ -292,7 +293,7 @@ if(filesChanged == True):
 		linkCommand = generateLinkCommand()
 		if(args.verbose):
 			print(linkCommand)
-		call(linkCommand)
+		os.system(linkCommand)
 else:
 	if(args.verbose):
 		print("No files changed")
@@ -303,7 +304,7 @@ if(args.verbose and args.run and settings["IsLibrary"] == True):
 if(args.run and settings["IsLibrary"] != True):
 	if(args.verbose):
 		print("Running program")
-	call("." + os.sep + settings["OutputFile"] + settings["ExecutableSuffix"])
+	os.system("." + os.sep + settings["OutputFile"] + settings["ExecutableSuffix"])
 
 # TODO
 # 1: There might be problems with Path not automaticly resolving the absolute path
