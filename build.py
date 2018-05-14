@@ -319,7 +319,7 @@ if(filesChanged == True):
 		# Move all headers
 		ignore_func = lambda d, files: [f for f in files if (Path(d) / Path(f)).is_file() and not (f.endswith('.h') or f.endswith('.hpp') or f.endswith('.inl'))]
 		for source in settings["SourceLocations"]:
-			copytree_multi(Path(source), Path(settings["LibraryHeaderOutput"]), ignore=ignore_func)
+			copytree_multi(Path(source), Path(settings["LibraryHeaderOutput"] + "Xenon"), ignore=ignore_func)
 		for source in settings["HeaderLocations"]:
 			copytree_multi(Path(source), Path(settings["LibraryHeaderOutput"]), ignore=ignore_func)
 

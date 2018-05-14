@@ -39,5 +39,6 @@
 		"-pthread"
 	],
 	"Dependencies": [
-	]
+	],
+	"LibraryLinker": "ar"
 }
