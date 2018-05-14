@@ -51,7 +51,6 @@ if(args.gclean == True):
 if(args.platform):
 	platformName = args.platform
 else:
-	if()
 	platformName = platform.system().lower()
 	if(platformName != "linux" and platformName != "darwin" and platformName != "windows" and platformName != "mac"):
 		print("Unknown platform specified: " + platformName)
