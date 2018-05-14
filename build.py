@@ -16,7 +16,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import json, argparse, hashlib, os, shutil, distutils.dir_util
+import json, argparse, hashlib, os, shutil, distutils.dir_util, platform
 from pathlib import Path
 from subprocess import call
 
@@ -28,6 +28,7 @@ parser.add_argument("-v", "--verbose", help="enter verbose mode", action="store_
 parser.add_argument("-r", "--run", help="run the program after compilation", action="store_true")
 parser.add_argument("-gc", "--gclean", help="treat all files as changed for this project and all its dependencies", action="store_true")
 parser.add_argument("-gv", "--gverbose", help="enter global verbose mode", action="store_true")
+parser.add_argument("-p", "--platform", help="enter the platform to compile for", type=str)
 
 # Parse the arguments
 args = parser.parse_args()
@@ -38,6 +39,7 @@ newFiles = {}
 data = {}
 commands = []
 filesChanged = False
+platformName = ""
 
 # Set local arguments to reflect the global arguments
 if(args.gverbose == True):
@@ -45,14 +47,30 @@ if(args.gverbose == True):
 if(args.gclean == True):
 	args.clean = True
 
+# Get platform
+if(args.platform):
+	platformName = args.platform
+else:
+	if()
+	platformName = platform.system().lower()
+	if(platformName != "linux" and platformName != "darwin" and platformName != "windows" and platformName != "mac"):
+		print("Unknown platform specified: " + platformName)
+		exit(3)
+	if(platformName == "drawin"):
+		platformName = "mac"
+
 # Load settings
-if(Path("settings.json").exists()):
+if(Path("settings.json").exists() and not args.platform):
 	with open("settings.json", encoding="utf-8") as settingsfile:
 			settings = json.load(settingsfile)
+elif(Path("settings_" + platformName +  ".json").exists()):
+	with open("settings_" + platformName +  ".json", encoding="utf-8") as settingsfile:
+			settings = json.load(settingsfile)
 else:
-	print("No settings file found!")
+	print("No settings file found named: settings_" + platformName +  ".json")
 	exit(2)
 
+# Convert args to input string for dependencies
 def getDependencyArgsAsString(args):
 	strArg = ""
 	if(args.gclean):
@@ -68,7 +86,6 @@ for dep in settings["Dependencies"]:
 	path = str(Path(dep))
 	if(args.verbose):
 		print("Starting: " + path + os.sep + "build.py")
-	#call("python build.py " + getDependencyArgsAsString(args), cwd=path)
 	os.system("cd " + path + "; python build.py " + getDependencyArgsAsString(args))
 	if(args.verbose):
 		print("Dependency completed")
@@ -305,7 +322,3 @@ if(args.run and settings["IsLibrary"] != True):
 	if(args.verbose):
 		print("Running program")
 	os.system("." + os.sep + settings["OutputFile"] + settings["ExecutableSuffix"])
-
-# TODO
-# 1: There might be problems with Path not automaticly resolving the absolute path
-# 2: Force an update after the settings file has been changed
