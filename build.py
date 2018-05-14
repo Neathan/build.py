@@ -28,7 +28,7 @@ parser.add_argument("-v", "--verbose", help="enter verbose mode", action="store_
 parser.add_argument("-r", "--run", help="run the program after compilation", action="store_true")
 parser.add_argument("-gc", "--gclean", help="treat all files as changed for this project and all its dependencies", action="store_true")
 parser.add_argument("-gv", "--gverbose", help="enter global verbose mode", action="store_true")
-parser.add_argument("-p", "--platform", help="enter the platform to compile for", type=str)
+parser.add_argument("-p", "--platform", help="the platform to compile for", type=str)
 
 # Parse the arguments
 args = parser.parse_args()
@@ -58,15 +58,28 @@ else:
 	if(platformName == "drawin"):
 		platformName = "mac"
 
+# Calling system commands
+def callCommand(command, cwd):
+	if(platformName == "windows"):
+		return call(command, cwd=cwd)
+	else:
+		return os.system("cd " + cwd + "; " + command)
+
+def getSettingsName():
+	if(Path("settings_" + platformName +  ".json").exists()):
+		return "settings_" + platformName +  ".json"
+	else:
+		Path("settings.json").exists()
+
 # Load settings
-if(Path("settings.json").exists() and not args.platform):
-	with open("settings.json", encoding="utf-8") as settingsfile:
-			settings = json.load(settingsfile)
-elif(Path("settings_" + platformName +  ".json").exists()):
+if(Path("settings_" + platformName +  ".json").exists()):
 	with open("settings_" + platformName +  ".json", encoding="utf-8") as settingsfile:
 			settings = json.load(settingsfile)
+elif(Path("settings.json").exists()):
+	with open("settings.json", encoding="utf-8") as settingsfile:
+			settings = json.load(settingsfile)
 else:
-	print("No settings file found named: settings_" + platformName +  ".json")
+	print("No settings file found!")
 	exit(2)
 
 # Convert args to input string for dependencies
@@ -76,6 +89,8 @@ def getDependencyArgsAsString(args):
 		strArg += "-gc "
 	if(args.gverbose):
 		strArg += "-gv "
+	if(args.platform):
+		strArg += "-p " + args.platform + " "
 	return strArg
 
 # Run dependencies
@@ -85,7 +100,9 @@ for dep in settings["Dependencies"]:
 	path = str(Path(dep))
 	if(args.verbose):
 		print("Starting: " + path + os.sep + "build.py")
-	os.system("cd " + path + "; python build.py " + getDependencyArgsAsString(args))
+		#print("cd " + path + "; python build.py " + getDependencyArgsAsString(args))
+	#os.system("cd " + path + "; python build.py " + getDependencyArgsAsString(args))
+	callCommand("python build.py " + getDependencyArgsAsString(args), path)
 	if(args.verbose):
 		print("Dependency completed")
 
@@ -103,7 +120,7 @@ if(haveFilesFile):
 	with open("files.json", encoding="utf-8") as file:
 		data = json.load(file)
 		files = data["files"]
-	with open("settings.json", "rb") as file:
+	with open(getSettingsName(), "rb") as file:
 				buf = file.read()
 				hasher = hashlib.md5()
 				hasher.update(buf)
@@ -124,7 +141,7 @@ if(args.clean or not haveFilesFile or settingsFileUpdated):
 
 	data = {}
 	data["files"] = {}
-	with open("settings.json", "rb") as file:
+	with open(getSettingsName(), "rb") as file:
 				buf = file.read()
 				hasher = hashlib.md5()
 				hasher.update(buf)
@@ -275,7 +292,8 @@ if(filesChanged == True):
 		if(command not in commands):
 			if(args.verbose):
 				print(command)
-			error = os.system(command)
+			#error = os.system(command)
+			error = callCommand(command, ".")
 			if((error >> 8) != 0):
 				print(command)
 				if(not args.verbose):
@@ -292,7 +310,8 @@ if(filesChanged == True):
 		linkCommand = generateLibraryLinkCommand()
 		if(args.verbose):
 			print(linkCommand)
-		os.system(linkCommand)
+		#os.system(linkCommand)
+		callCommand(linkCommand, ".")
 
 		# Check if folder exists
 		if(Path(settings["LibraryHeaderOutput"]).exists()):
@@ -309,7 +328,8 @@ if(filesChanged == True):
 		linkCommand = generateLinkCommand()
 		if(args.verbose):
 			print(linkCommand)
-		os.system(linkCommand)
+		#os.system(linkCommand)
+		callCommand(linkCommand, ".")
 else:
 	if(args.verbose):
 		print("No files changed")
@@ -320,4 +340,5 @@ if(args.verbose and args.run and settings["IsLibrary"] == True):
 if(args.run and settings["IsLibrary"] != True):
 	if(args.verbose):
 		print("Running program")
-	os.system("." + os.sep + settings["OutputFile"] + settings["ExecutableSuffix"])
+	#os.system("." + os.sep + settings["OutputFile"] + settings["ExecutableSuffix"])
+	callCommand("." + os.sep + settings["OutputFile"] + settings["ExecutableSuffix"], ".")
